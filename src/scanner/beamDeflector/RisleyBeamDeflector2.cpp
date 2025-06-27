@@ -16,10 +16,30 @@ using Base = std::shared_ptr<AbstractBeamDeflector>;
 Base
 RisleyBeamDeflector2::clone()
 {
-  Base ombd = std::make_shared<RisleyBeamDeflector2>(
-    RisleyBeamDeflector2(cfg_device_scanAngleMax_rad,
-                         cfg_device_scanFreqMax_Hz,
-                         cfg_device_scanFreqMin_Hz));
+  Base ombd =
+    std::make_shared<RisleyBeamDeflector2>(cfg_device_scanAngleMax_rad,
+                                           rotorSpeed_rad_1 * 2.0 * M_PI,
+                                           rotorSpeed_rad_2 * 2.0 * M_PI,
+                                           rotorSpeed_rad_3 * 2.0 * M_PI,
+                                           prism1_angle,
+                                           prism2_angle,
+                                           prism3_angle,
+                                           prism1_thickness,
+                                           prism2_thickness,
+                                           prism3_thickness,
+                                           prism1_radius,
+                                           prism2_radius,
+                                           prism3_radius,
+                                           distance_prism1_2,
+                                           distance_prism2_3,
+                                           distance_to_observation_plane,
+                                           refrIndex_prism1,
+                                           refrIndex_prism2,
+                                           refrIndex_prism3,
+                                           refrIndex_air,
+                                           numberOfBeams,
+                                           beamSpreadLim);
+
   _clone(ombd);
   return ombd;
 }
@@ -31,6 +51,32 @@ RisleyBeamDeflector2::_clone(std::shared_ptr<AbstractBeamDeflector> abd)
   ombd->scanAngle = scanAngle;
   ombd->rotorSpeed_rad_1 = rotorSpeed_rad_1;
   ombd->rotorSpeed_rad_2 = rotorSpeed_rad_2;
+  ombd->rotorSpeed_rad_2 = rotorSpeed_rad_2;
+  ombd->rotorSpeed_rad_3 = rotorSpeed_rad_3;
+
+  ombd->prism1_angle = prism1_angle;
+  ombd->prism2_angle = prism2_angle;
+  ombd->prism3_angle = prism3_angle;
+
+  ombd->prism1_thickness = prism1_thickness;
+  ombd->prism2_thickness = prism2_thickness;
+  ombd->prism3_thickness = prism3_thickness;
+
+  ombd->prism1_radius = prism1_radius;
+  ombd->prism2_radius = prism2_radius;
+  ombd->prism3_radius = prism3_radius;
+
+  ombd->distance_prism1_2 = distance_prism1_2;
+  ombd->distance_prism2_3 = distance_prism2_3;
+  ombd->distance_to_observation_plane = distance_to_observation_plane;
+
+  ombd->refrIndex_prism1 = refrIndex_prism1;
+  ombd->refrIndex_prism2 = refrIndex_prism2;
+  ombd->refrIndex_prism3 = refrIndex_prism3;
+  ombd->refrIndex_air = refrIndex_air;
+
+  ombd->numberOfBeams = numberOfBeams;
+  ombd->beamSpreadLim = beamSpreadLim;
 }
 
 void
