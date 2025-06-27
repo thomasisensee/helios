@@ -32,6 +32,7 @@ namespace fs = boost::filesystem;
 #include "OscillatingMirrorBeamDeflector.h"
 #include "PolygonMirrorBeamDeflector.h"
 #include "RisleyBeamDeflector.h"
+#include "RisleyBeamDeflector2.h"
 #include <scanner/EvalScannerHead.h>
 #include <scanner/beamDeflector/evaluable/EvalPolygonMirrorBeamDeflector.h>
 
@@ -954,6 +955,13 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
       XmlUtils::getAttribute(scannerNode, "rotorFreq2_Hz", "int", -4664));
     beamDeflector = std::make_shared<RisleyBeamDeflector>(
       scanAngleMax_rad, (double)rotorFreq_1_Hz, (double)rotorFreq_2_Hz);
+  } else if (str_opticsType == "risley2") {
+    int rotorFreq_1_Hz = boost::get<int>(
+      XmlUtils::getAttribute(scannerNode, "rotorFreq1_Hz", "int", 7294));
+    int rotorFreq_2_Hz = boost::get<int>(
+      XmlUtils::getAttribute(scannerNode, "rotorFreq2_Hz", "int", -4664));
+    beamDeflector = std::make_shared<RisleyBeamDeflector2>(
+      scanAngleMax_rad, (double)rotorFreq_1_Hz, (double)rotorFreq_2_Hz);
   }
 
   if (beamDeflector == nullptr) {
@@ -1328,7 +1336,9 @@ XmlAssetsLoader::fillScanningDevicesFromChannels(
          std::dynamic_pointer_cast<PolygonMirrorBeamDeflector>(deflec) !=
            nullptr) ||
         (optics == "risley" &&
-         std::dynamic_pointer_cast<RisleyBeamDeflector>(deflec) != nullptr);
+         std::dynamic_pointer_cast<RisleyBeamDeflector>(deflec) != nullptr) ||
+        (optics == "risley2" &&
+         std::dynamic_pointer_cast<RisleyBeamDeflector2>(deflec) != nullptr);
       if (!deflectorsMatch) { // Assign new beam deflector, dont update
         scanner->setBeamDeflector(createBeamDeflectorFromXml(chan), idx);
         updateDeflector = false;
@@ -1385,6 +1395,23 @@ XmlAssetsLoader::fillScanningDevicesFromChannels(
       if (optics == "risley") {
         std::shared_ptr<RisleyBeamDeflector> rbd =
           std::static_pointer_cast<RisleyBeamDeflector>(_deflec);
+        if (XmlUtils::hasAttribute(chan, "rotorFreq1_Hz")) {
+          rbd->rotorSpeed_rad_1 =
+            ((double)boost::get<int>(
+              XmlUtils::getAttribute(chan, "rotorFreq1_Hz", "int", 7294))) /
+            PI_2;
+        }
+        if (XmlUtils::hasAttribute(chan, "rotorFreq2_Hz")) {
+          rbd->rotorSpeed_rad_2 =
+            ((double)boost::get<int>(
+              XmlUtils::getAttribute(chan, "rotorFreq2_Hz", "int", -4664))) /
+            PI_2;
+        }
+      }
+      // Risley2 beam deflector updates
+      if (optics == "risley2") {
+        std::shared_ptr<RisleyBeamDeflector2> rbd =
+          std::static_pointer_cast<RisleyBeamDeflector2>(_deflec);
         if (XmlUtils::hasAttribute(chan, "rotorFreq1_Hz")) {
           rbd->rotorSpeed_rad_1 =
             ((double)boost::get<int>(

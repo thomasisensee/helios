@@ -17,6 +17,7 @@ target_sources(
   "beamDeflector/AbstractBeamDeflector.cpp"
   "beamDeflector/evaluable/EvalPolygonMirrorBeamDeflector.cpp"
   "beamDeflector/RisleyBeamDeflector.cpp"
+  "beamDeflector/RisleyBeamDeflector2.cpp"
   "beamDeflector/PolygonMirrorBeamDeflector.cpp"
   "beamDeflector/FiberArrayBeamDeflector.cpp"
   "beamDeflector/ConicBeamDeflector.cpp"

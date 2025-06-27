@@ -6,6 +6,7 @@
 #include <scanner/beamDeflector/OscillatingMirrorBeamDeflector.h>
 #include <scanner/beamDeflector/PolygonMirrorBeamDeflector.h>
 #include <scanner/beamDeflector/RisleyBeamDeflector.h>
+#include <scanner/beamDeflector/RisleyBeamDeflector2.h>
 
 #include <memory>
 
