@@ -4,11 +4,13 @@
 #include <sstream>
 using namespace std;
 
+#include <glm/glm.hpp>
 #define _USE_MATH_DEFINES
 #include <logging.hpp>
 #include <math.h>
 
 #include "maths/Directions.h"
+#include "maths/MathConverter.h"
 
 using Base = std::shared_ptr<AbstractBeamDeflector>;
 
@@ -16,29 +18,29 @@ using Base = std::shared_ptr<AbstractBeamDeflector>;
 Base
 RisleyBeamDeflector2::clone()
 {
-  Base ombd =
-    std::make_shared<RisleyBeamDeflector2>(cfg_device_scanAngleMax_rad,
-                                           rotorSpeed_rad_1 * 2.0 * M_PI,
-                                           rotorSpeed_rad_2 * 2.0 * M_PI,
-                                           rotorSpeed_rad_3 * 2.0 * M_PI,
-                                           prism1_angle,
-                                           prism2_angle,
-                                           prism3_angle,
-                                           prism1_thickness,
-                                           prism2_thickness,
-                                           prism3_thickness,
-                                           prism1_radius,
-                                           prism2_radius,
-                                           prism3_radius,
-                                           distance_prism1_2,
-                                           distance_prism2_3,
-                                           distance_to_observation_plane,
-                                           refrIndex_prism1,
-                                           refrIndex_prism2,
-                                           refrIndex_prism3,
-                                           refrIndex_air,
-                                           numberOfBeams,
-                                           beamSpreadLim);
+  Base ombd = std::make_shared<RisleyBeamDeflector2>(
+    cfg_device_scanAngleMax_rad,
+    rotorSpeed_rad_1 * 2.0 * M_PI,
+    rotorSpeed_rad_2 * 2.0 * M_PI,
+    rotorSpeed_rad_3 * 2.0 * M_PI,
+    MathConverter::radiansToDegrees(prism1_angle_rad),
+    MathConverter::radiansToDegrees(prism2_angle_rad),
+    MathConverter::radiansToDegrees(prism3_angle_rad),
+    prism1_thickness,
+    prism2_thickness,
+    prism3_thickness,
+    prism1_radius,
+    prism2_radius,
+    prism3_radius,
+    distance_prism1_2,
+    distance_prism2_3,
+    distance_to_observation_plane,
+    refrIndex_prism1,
+    refrIndex_prism2,
+    refrIndex_prism3,
+    refrIndex_air,
+    numberOfBeams,
+    beamSpreadLim);
 
   _clone(ombd);
   return ombd;
@@ -54,9 +56,9 @@ RisleyBeamDeflector2::_clone(std::shared_ptr<AbstractBeamDeflector> abd)
   ombd->rotorSpeed_rad_2 = rotorSpeed_rad_2;
   ombd->rotorSpeed_rad_3 = rotorSpeed_rad_3;
 
-  ombd->prism1_angle = prism1_angle;
-  ombd->prism2_angle = prism2_angle;
-  ombd->prism3_angle = prism3_angle;
+  ombd->prism1_angle_rad = prism1_angle_rad;
+  ombd->prism2_angle_rad = prism2_angle_rad;
+  ombd->prism3_angle_rad = prism3_angle_rad;
 
   ombd->prism1_thickness = prism1_thickness;
   ombd->prism2_thickness = prism2_thickness;
@@ -154,4 +156,59 @@ RisleyBeamDeflector2::setScanFreq_Hz(double scanFreq_Hz)
   stringstream ss;
   ss << "Scan frequency set to " << this->cfg_setting_scanFreq_Hz << " Hz.";
   logging::INFO(ss.str());
+}
+
+void
+RisleyBeamDeflector2::initializeGeometry()
+{
+  cachedPrism1NormalVector1 = glm::dvec3(0.0, 0.0, 1.0);
+  cachedPrism1NormalVector2 =
+    glm::dvec3(0.0, sin(prism1_angle_rad), cos(prism1_angle_rad));
+  cachedPrism1NormalVector2Original = cachedPrism1NormalVector2;
+
+  cachedPrism2NormalVector1 =
+    glm::dvec3(0.0, -sin(prism2_angle_rad), cos(prism2_angle_rad));
+  cachedPrism2NormalVector1Original = cachedPrism2NormalVector1;
+  cachedPrism2NormalVector2 = glm::dvec3(0.0, 0.0, 1.0);
+
+  cachedPrism3NormalVector1 =
+    glm::dvec3(0.0, -sin(prism3_angle_rad), cos(prism3_angle_rad));
+  cachedPrism3NormalVector1Original = cachedPrism3NormalVector1;
+  cachedPrism3NormalVector2 = glm::dvec3(0.0, 0.0, 1.0);
+
+  cachedObservationPlaneNormalVector = glm::dvec3(0.0, 0.0, 1.0);
+
+  cachedBeamDirectionVectors.clear();
+  for (int i = 0; i < numberOfBeams; ++i) {
+    double a = -beamSpreadLim + 2 * beamSpreadLim * i / (numberOfBeams - 1);
+    glm::dvec3 dir(a, 0.0, 1.0);
+    dir = glm::normalize(dir);
+    cachedBeamDirectionVectors.push_back(dir);
+  }
+
+  cachedPrism1ThicknessSlopedZAxis = prism1_radius * tan(prism1_angle_rad);
+  cachedPrism2ThicknessSlopedZAxis = prism2_radius * tan(prism2_angle_rad);
+  cachedPrism3ThicknessSlopedZAxis = prism3_radius * tan(prism3_angle_rad);
+
+  cachedBeamZAxisPoint = glm::dvec3(0.0, 0.0, -1.0);
+  cachedPrism1ZAxisPoint1 = glm::dvec3(0.0, 0.0, 0.0);
+
+  double Z = prism1_thickness + cachedPrism1ThicknessSlopedZAxis;
+  cachedPrism1ZAxisPoint2 = glm::dvec3(0.0, 0.0, Z);
+
+  Z += distance_prism1_2 + cachedPrism1ThicknessSlopedZAxis +
+       cachedPrism2ThicknessSlopedZAxis;
+  cachedPrism2ZAxisPoint1 = glm::dvec3(0.0, 0.0, Z);
+
+  Z += prism2_thickness + cachedPrism2ThicknessSlopedZAxis;
+  cachedPrism2ZAxisPoint2 = glm::dvec3(0.0, 0.0, Z);
+
+  Z += distance_prism2_3 + cachedPrism3ThicknessSlopedZAxis;
+  cachedPrism3ZAxisPoint1 = glm::dvec3(0.0, 0.0, Z);
+
+  Z += prism3_thickness + cachedPrism3ThicknessSlopedZAxis;
+  cachedPrism3ZAxisPoint2 = glm::dvec3(0.0, 0.0, Z);
+
+  Z += distance_to_observation_plane;
+  cachedObservationPlaneZAxisPoint = glm::dvec3(0.0, 0.0, Z);
 }

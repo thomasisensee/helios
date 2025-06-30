@@ -963,11 +963,11 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
     int rotorFreq_3_Hz = boost::get<int>(
       XmlUtils::getAttribute(scannerNode, "rotorFreq3_Hz", "int", -540000));
 
-    double prism1_angle = boost::get<double>(XmlUtils::getAttribute(
+    double prism1_angle_deg = boost::get<double>(XmlUtils::getAttribute(
       scannerNode, "prism1_angle_deg", "double", 27.65221)); // Which defaults?
-    double prism2_angle = boost::get<double>(
+    double prism2_angle_deg = boost::get<double>(
       XmlUtils::getAttribute(scannerNode, "prism2_angle_deg", "double", 1.072));
-    double prism3_angle = boost::get<double>(XmlUtils::getAttribute(
+    double prism3_angle_deg = boost::get<double>(XmlUtils::getAttribute(
       scannerNode, "prism3_angle_deg", "double", 0.100565));
 
     double prism1_thickness = boost::get<double>(XmlUtils::getAttribute(
@@ -1010,9 +1010,9 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
                                              (double)rotorFreq_1_Hz,
                                              (double)rotorFreq_2_Hz,
                                              (double)rotorFreq_3_Hz,
-                                             prism1_angle,
-                                             prism2_angle,
-                                             prism3_angle,
+                                             prism1_angle_deg,
+                                             prism2_angle_deg,
+                                             prism3_angle_deg,
                                              prism1_thickness,
                                              prism2_thickness,
                                              prism3_thickness,

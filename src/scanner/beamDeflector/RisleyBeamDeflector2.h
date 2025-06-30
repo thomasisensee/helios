@@ -2,7 +2,9 @@
 
 #include "AbstractBeamDeflector.h"
 
-#include "MathConverter.h"
+#include "maths/MathConverter.h"
+
+#include <glm/glm.hpp>
 
 /**
  * @brief Class representing a risley prisms beam deflector
@@ -25,9 +27,9 @@ public:
   double rotorSpeed_rad_1 = 0;
   double rotorSpeed_rad_2 = 0;
   double rotorSpeed_rad_3 = 0;
-  double prism1_angle = 0;
-  double prism2_angle = 0;
-  double prism3_angle = 0;
+  double prism1_angle_rad = 0;
+  double prism2_angle_rad = 0;
+  double prism3_angle_rad = 0;
   double prism1_thickness = 0;
   double prism2_thickness = 0;
   double prism3_thickness = 0;
@@ -81,9 +83,9 @@ public:
     this->rotorSpeed_rad_2 = rotorFreq_Hz_2 * 0.5 / M_PI;
     this->rotorSpeed_rad_3 = rotorFreq_Hz_3 * 0.5 / M_PI;
 
-    this->prism1_angle = prism1_angle_deg;
-    this->prism2_angle = prism2_angle_deg;
-    this->prism3_angle = prism3_angle_deg;
+    this->prism1_angle_rad = MathConverter::degreesToRadians(prism1_angle_deg);
+    this->prism2_angle_rad = MathConverter::degreesToRadians(prism2_angle_deg);
+    this->prism3_angle_rad = MathConverter::degreesToRadians(prism3_angle_deg);
 
     this->prism1_thickness = prism1_thickness;
     this->prism2_thickness = prism2_thickness;
@@ -104,6 +106,8 @@ public:
 
     this->numberOfBeams = numberOfBeams;
     this->beamSpreadLim = beamSpreadLim;
+
+    initializeGeometry();
   }
   std::shared_ptr<AbstractBeamDeflector> clone() override;
   void _clone(std::shared_ptr<AbstractBeamDeflector> abd) override;
@@ -118,7 +122,6 @@ public:
    * @see AbstractBeamDeflector::doSimStep
    */
   void doSimStep() override;
-
   /**
    * @see AbstractBeamDeflector::getOpticsType
    */
@@ -134,4 +137,25 @@ public:
    * @see AbstractBeamDeflector::setScanFreq_Hz
    */
   void setScanFreq_Hz(double scanFreq_Hz) override;
+
+private:
+  glm::dvec3 cachedPrism1NormalVector1, cachedPrism1NormalVector2,
+    cachedPrism1NormalVector2Original;
+  glm::dvec3 cachedPrism2NormalVector1, cachedPrism2NormalVector1Original,
+    cachedPrism2NormalVector2;
+  glm::dvec3 cachedPrism3NormalVector1, cachedPrism3NormalVector1Original,
+    cachedPrism3NormalVector2;
+  glm::dvec3 cachedObservationPlaneNormalVector;
+  std::vector<glm::dvec3> cachedBeamDirectionVectors;
+
+  double cachedPrism1ThicknessSlopedZAxis, cachedPrism2ThicknessSlopedZAxis,
+    cachedPrism3ThicknessSlopedZAxis;
+
+  glm::dvec3 cachedBeamZAxisPoint;
+  glm::dvec3 cachedPrism1ZAxisPoint1, cachedPrism1ZAxisPoint2;
+  glm::dvec3 cachedPrism2ZAxisPoint1, cachedPrism2ZAxisPoint2;
+  glm::dvec3 cachedPrism3ZAxisPoint1, cachedPrism3ZAxisPoint2;
+  glm::dvec3 cachedObservationPlaneZAxisPoint;
+
+  void initializeGeometry();
 };
