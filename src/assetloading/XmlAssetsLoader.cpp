@@ -1000,8 +1000,6 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
     double refr_air = boost::get<double>(
       XmlUtils::getAttribute(scannerNode, "refrIndex_air", "double", 1.0));
 
-    int numberOfBeams = boost::get<int>(
-      XmlUtils::getAttribute(scannerNode, "numberOfBeams", "int", 6));
     double lims_mm = boost::get<double>(XmlUtils::getAttribute(
       scannerNode, "beamSpreadLim_mm", "double", 0.0268873));
 
@@ -1026,7 +1024,6 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
                                              refr_prism2,
                                              refr_prism3,
                                              refr_air,
-                                             numberOfBeams,
                                              lims_mm);
   }
 

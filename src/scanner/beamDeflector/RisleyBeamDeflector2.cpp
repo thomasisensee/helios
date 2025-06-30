@@ -39,7 +39,6 @@ RisleyBeamDeflector2::clone()
     refrIndex_prism2,
     refrIndex_prism3,
     refrIndex_air,
-    numberOfBeams,
     beamSpreadLim);
 
   _clone(ombd);
@@ -77,7 +76,6 @@ RisleyBeamDeflector2::_clone(std::shared_ptr<AbstractBeamDeflector> abd)
   ombd->refrIndex_prism3 = refrIndex_prism3;
   ombd->refrIndex_air = refrIndex_air;
 
-  ombd->numberOfBeams = numberOfBeams;
   ombd->beamSpreadLim = beamSpreadLim;
 }
 
@@ -96,21 +94,212 @@ RisleyBeamDeflector2::applySettings(std::shared_ptr<ScannerSettings> settings)
 void
 RisleyBeamDeflector2::doSimStep()
 {
-
   // time integration
   time += deltaT;
 
-  // calculate the absolute angle
+  // Rotate the normal vectors of moving prism surfaces
+  glm::dvec3 Prism1NormalVector2 = rotateVectorRodrigues(
+    this->cachedPrism1NormalVector2, this->rotorSpeed_rad_1 * this->time);
+  glm::dvec3 Prism2NormalVector1 = rotateVectorRodrigues(
+    this->cachedPrism2NormalVector1, this->rotorSpeed_rad_2 * this->time);
+  glm::dvec3 Prism3NormalVector1 = rotateVectorRodrigues(
+    this->cachedPrism3NormalVector1, this->rotorSpeed_rad_3 * this->time);
 
-  double xFOV = cos(time * rotorSpeed_rad_1) + cos(time * rotorSpeed_rad_2);
-  double yFOV = -sin(time * rotorSpeed_rad_1) - sin(time * rotorSpeed_rad_2);
+  // === Beam propagation ===
 
-  double phi = -xFOV / 2.0 * scanAngle;
-  double eta = -yFOV / 2.0 * scanAngle;
+  // Initial beam direction
+  glm::dvec3 beam00 = this->cachedBeamDirection;
+
+  // Prism 1: First surface
+  glm::dvec3 Pb11;
+  bool ok = intersectLinePlane(this->cachedBeamZAxisPoint,
+                               beam00,
+                               this->cachedPrism1ZAxisPoint1,
+                               this->cachedPrism1NormalVector1,
+                               Pb11);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam11;
+  ok = refractBeam(beam00,
+                   this->cachedPrism1NormalVector1,
+                   this->refrIndex_air,
+                   this->refrIndex_prism1,
+                   beam11);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Prism 1: Second surface
+  glm::dvec3 Pb12;
+  ok = intersectLinePlane(
+    Pb11, beam11, this->cachedPrism1ZAxisPoint2, Prism1NormalVector2, Pb12);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam12;
+  ok = refractBeam(beam11,
+                   Prism1NormalVector2,
+                   this->refrIndex_prism1,
+                   this->refrIndex_air,
+                   beam12);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Prism 2: First surface
+  glm::dvec3 Pb21;
+  ok = intersectLinePlane(
+    Pb12, beam12, this->cachedPrism2ZAxisPoint1, Prism2NormalVector1, Pb12);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam21;
+  ok = refractBeam(beam12,
+                   Prism2NormalVector1,
+                   this->refrIndex_air,
+                   this->refrIndex_prism2,
+                   beam21);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Prism 2: Second surface
+  glm::dvec3 Pb22;
+  ok = intersectLinePlane(Pb21,
+                          beam21,
+                          this->cachedPrism2ZAxisPoint2,
+                          this->cachedPrism2NormalVector2,
+                          Pb22);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam22;
+  ok = refractBeam(beam21,
+                   this->cachedPrism2NormalVector2,
+                   this->refrIndex_prism2,
+                   this->refrIndex_air,
+                   beam22);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Prism 3: First surface
+  glm::dvec3 Pb31;
+  ok = intersectLinePlane(
+    Pb22, beam22, this->cachedPrism3ZAxisPoint1, Prism3NormalVector1, Pb31);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam31;
+  ok = refractBeam(beam22,
+                   Prism3NormalVector1,
+                   this->refrIndex_air,
+                   this->refrIndex_prism3,
+                   beam31);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Prism 3: Second surface
+  glm::dvec3 Pb32;
+  ok = intersectLinePlane(Pb31,
+                          beam31,
+                          this->cachedPrism3ZAxisPoint2,
+                          this->cachedPrism3NormalVector2,
+                          Pb32);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
+
+  glm::dvec3 beam32;
+  ok = refractBeam(beam31,
+                   this->cachedPrism3NormalVector2,
+                   this->refrIndex_prism3,
+                   this->refrIndex_air,
+                   beam32);
+  if (!ok) {
+    printf("Refraction\n");
+    return;
+  }
+
+  // Final intersection with observation plane
+  glm::dvec3 Pbobs;
+  ok = intersectLinePlane(Pb32,
+                          beam32,
+                          this->cachedObservationPlaneZAxisPoint,
+                          this->cachedObservationPlaneNormalVector,
+                          Pbobs);
+  if (!ok) {
+    printf("Parallel\n");
+    return;
+  }
 
   // Rotate to current position:
-  this->cached_emitterRelativeAttitude =
-    Rotation(RotationOrder::ZXY, phi, eta, 0);
+  this->cached_emitterRelativeAttitude = Rotation(Directions::forward, Pbobs);
+}
+
+bool
+RisleyBeamDeflector2::intersectLinePlane(const glm::dvec3& pointOnLine,
+                                         const glm::dvec3& lineDirection,
+                                         const glm::dvec3& pointOnPlane,
+                                         const glm::dvec3& normalPlane,
+                                         glm::dvec3& intersection)
+{
+  double denom = glm::dot(lineDirection, normalPlane);
+  if (std::abs(denom) < 1e-12)
+    return false; // parallel
+
+  double t = glm::dot(pointOnPlane - pointOnLine, normalPlane) / denom;
+  intersection = pointOnPlane + t * lineDirection;
+  return true;
+}
+
+bool
+RisleyBeamDeflector2::refractBeam(const glm::dvec3& incidentBeamDirection,
+                                  const glm::dvec3& surfaceNormal,
+                                  double refractiveIdxA,
+                                  double refractiveIdxB,
+                                  glm::dvec3& refracted)
+{
+  double cos_delta_i = glm::dot(incidentBeamDirection, -surfaceNormal);
+  double sin2_delta_r = (refractiveIdxA / refractiveIdxB) *
+                        (refractiveIdxA / refractiveIdxB) *
+                        (1.0 - cos_delta_i * cos_delta_i);
+
+  if (sin2_delta_r > 1.0)
+    return false; // total internal reflection
+
+  double cos_delta_r = sqrt(1.0 - sin2_delta_r);
+  refracted = (refractiveIdxA / refractiveIdxB) * incidentBeamDirection +
+              (refractiveIdxA / refractiveIdxB * cos_delta_i - cos_delta_r) *
+                surfaceNormal;
+  return true;
+}
+
+glm::dvec3
+RisleyBeamDeflector2::rotateVectorRodrigues(const glm::dvec3& vec, double angle)
+{
+  glm::dvec3 axis(0.0, 0.0, 1.0);
+
+  return vec * cos(angle) + glm::cross(axis, vec) * sin(angle) +
+         axis * glm::dot(axis, vec) * (1.0 - cos(angle));
 }
 
 void
@@ -164,34 +353,27 @@ RisleyBeamDeflector2::initializeGeometry()
   cachedPrism1NormalVector1 = glm::dvec3(0.0, 0.0, 1.0);
   cachedPrism1NormalVector2 =
     glm::dvec3(0.0, sin(prism1_angle_rad), cos(prism1_angle_rad));
-  cachedPrism1NormalVector2Original = cachedPrism1NormalVector2;
 
   cachedPrism2NormalVector1 =
     glm::dvec3(0.0, -sin(prism2_angle_rad), cos(prism2_angle_rad));
-  cachedPrism2NormalVector1Original = cachedPrism2NormalVector1;
   cachedPrism2NormalVector2 = glm::dvec3(0.0, 0.0, 1.0);
 
   cachedPrism3NormalVector1 =
     glm::dvec3(0.0, -sin(prism3_angle_rad), cos(prism3_angle_rad));
-  cachedPrism3NormalVector1Original = cachedPrism3NormalVector1;
   cachedPrism3NormalVector2 = glm::dvec3(0.0, 0.0, 1.0);
 
   cachedObservationPlaneNormalVector = glm::dvec3(0.0, 0.0, 1.0);
 
-  cachedBeamDirectionVectors.clear();
-  for (int i = 0; i < numberOfBeams; ++i) {
-    double a = -beamSpreadLim + 2 * beamSpreadLim * i / (numberOfBeams - 1);
-    glm::dvec3 dir(a, 0.0, 1.0);
-    dir = glm::normalize(dir);
-    cachedBeamDirectionVectors.push_back(dir);
-  }
+  // --- Beam direction setup (single beam case) ---
+  glm::dvec3 cachedBeamDirection(0.0, 0.0, 1.0);
+
+  // --- Z-axis reference points ---
+  cachedBeamZAxisPoint = glm::dvec3(0.0, 0.0, -1.0);
+  cachedPrism1ZAxisPoint1 = glm::dvec3(0.0, 0.0, 0.0);
 
   cachedPrism1ThicknessSlopedZAxis = prism1_radius * tan(prism1_angle_rad);
   cachedPrism2ThicknessSlopedZAxis = prism2_radius * tan(prism2_angle_rad);
   cachedPrism3ThicknessSlopedZAxis = prism3_radius * tan(prism3_angle_rad);
-
-  cachedBeamZAxisPoint = glm::dvec3(0.0, 0.0, -1.0);
-  cachedPrism1ZAxisPoint1 = glm::dvec3(0.0, 0.0, 0.0);
 
   double Z = prism1_thickness + cachedPrism1ThicknessSlopedZAxis;
   cachedPrism1ZAxisPoint2 = glm::dvec3(0.0, 0.0, Z);

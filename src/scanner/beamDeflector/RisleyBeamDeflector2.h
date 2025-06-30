@@ -43,7 +43,6 @@ public:
   double refrIndex_prism2 = 0;
   double refrIndex_prism3 = 0;
   double refrIndex_air = 0;
-  int numberOfBeams = 0;
   double beamSpreadLim = 0;
 
   // ***  CONSTRUCTION / DESTRUCTION  *** //
@@ -74,7 +73,6 @@ public:
                        double refrIndex_prism2,
                        double refrIndex_prism3,
                        double refrIndex_air,
-                       int numberOfBeams,
                        double beamSpreadLim)
     : AbstractBeamDeflector(scanAngleMax_rad, 0, 0)
   {
@@ -104,7 +102,6 @@ public:
     this->refrIndex_prism3 = refrIndex_prism3;
     this->refrIndex_air = refrIndex_air;
 
-    this->numberOfBeams = numberOfBeams;
     this->beamSpreadLim = beamSpreadLim;
 
     initializeGeometry();
@@ -146,7 +143,7 @@ private:
   glm::dvec3 cachedPrism3NormalVector1, cachedPrism3NormalVector1Original,
     cachedPrism3NormalVector2;
   glm::dvec3 cachedObservationPlaneNormalVector;
-  std::vector<glm::dvec3> cachedBeamDirectionVectors;
+  glm::dvec3 cachedBeamDirection;
 
   double cachedPrism1ThicknessSlopedZAxis, cachedPrism2ThicknessSlopedZAxis,
     cachedPrism3ThicknessSlopedZAxis;
@@ -158,4 +155,71 @@ private:
   glm::dvec3 cachedObservationPlaneZAxisPoint;
 
   void initializeGeometry();
+
+  /**
+   * @brief Computes the intersection point between a line and a plane in 3D.
+   *
+   * Given a line defined by a point and direction vector, and a plane defined
+   * by a point and normal vector, this function computes the intersection point
+   * (if it exists) where the line crosses the plane.
+   *
+   * @param pointOnLine A point on the line (glm::dvec3).
+   * @param lineDirection The direction vector of the line (glm::dvec3).
+   * @param pointOnPlane A point on the plane (glm::dvec3).
+   * @param normalPlane The normal vector of the plane (glm::dvec3).
+   * @param intersection Output parameter: the intersection point (glm::dvec3).
+   *
+   * @return true if the line intersects the plane (not parallel), false
+   * otherwise.
+   *
+   * @note The function does not check if the intersection point lies within a
+   * bounded surface. It assumes the line is infinite in both directions and the
+   * plane is infinite.
+   */
+  bool intersectLinePlane(const glm::dvec3& pointOnLine,
+                          const glm::dvec3& lineDirection,
+                          const glm::dvec3& pointOnPlane,
+                          const glm::dvec3& normalPlane,
+                          glm::dvec3& intersection);
+
+  /**
+   * @brief Computes the refracted beam direction using Snell's law.
+   *
+   * Given an incident beam direction and a surface normal, this function
+   * calculates the direction of the refracted beam at the interface between
+   * two media with different refractive indices.
+   *
+   * @param incidentBeamDirection Incident beam direction (unit vector,
+   * glm::dvec3).
+   * @param surfaceNormal Surface normal vector pointing out of the interface
+   * (unit vector, glm::dvec3).
+   * @param refractiveIdxA Refractive index of the medium the beam is coming
+   * from.
+   * @param refractiveIdxB Refractive index of the medium the beam is entering.
+   * @param refracted Output parameter: the refracted beam direction
+   * (glm::dvec3).
+   *
+   * @return true if refraction occurs, false if there is total internal
+   * reflection.
+   *
+   * @note The input vectors `b` and `n` are expected to be normalized.
+   */
+  static bool refractBeam(const glm::dvec3& incidentBeamDirection,
+                          const glm::dvec3& surfaceNormal,
+                          double refractiveIdxA,
+                          double refractiveIdxB,
+                          glm::dvec3& refracted);
+
+  /**
+   * @brief Rotates a 3D vector around the z-axis using Rodrigues' rotation
+   * formula.
+   *
+   * This function applies a rotation to the input vector `vec` around the
+   * z-axis. The rotation is performed using Rodrigues' formula.
+   *
+   * @param vec The input vector to rotate.
+   * @param angle Rotation angle in radians.
+   * @return Rotated vector after applying the rotation.
+   */
+  static glm::dvec3 rotateVectorRodrigues(const glm::dvec3& vec, double angle);
 };

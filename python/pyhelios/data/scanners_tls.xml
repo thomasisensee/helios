@@ -140,7 +140,6 @@
 				refrIndex_prism2			= "1.5"
 				refrIndex_prism3			= "1.5"
 				refrIndex_air				= "1.0"
-				numberOfBeams				= "6"
 				lims 						= "0.0268873"
 	>
 				
