@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "AbstractBeamDeflector.h"
 
 #include "maths/MathConverter.h"
@@ -30,20 +32,18 @@ public:
   double prism1_angle_rad = 0;
   double prism2_angle_rad = 0;
   double prism3_angle_rad = 0;
-  double prism1_thickness = 0;
-  double prism2_thickness = 0;
-  double prism3_thickness = 0;
+  double prism1_thickness_base = 0;
+  double prism2_thickness_base = 0;
+  double prism3_thickness_base = 0;
   double prism1_radius = 0;
   double prism2_radius = 0;
   double prism3_radius = 0;
   double distance_prism1_2 = 0;
   double distance_prism2_3 = 0;
-  double distance_to_observation_plane = 0;
   double refrIndex_prism1 = 0;
   double refrIndex_prism2 = 0;
   double refrIndex_prism3 = 0;
   double refrIndex_air = 0;
-  double beamSpreadLim = 0;
 
   // ***  CONSTRUCTION / DESTRUCTION  *** //
   // ************************************ //
@@ -60,20 +60,18 @@ public:
                        double prism1_angle_deg,
                        double prism2_angle_deg,
                        double prism3_angle_deg,
-                       double prism1_thickness,
-                       double prism2_thickness,
-                       double prism3_thickness,
+                       double prism1_thickness_base,
+                       double prism2_thickness_base,
+                       double prism3_thickness_base,
                        double prism1_radius,
                        double prism2_radius,
                        double prism3_radius,
                        double distance_prism1_2,
                        double distance_prism2_3,
-                       double distance_to_observation_plane,
                        double refrIndex_prism1,
                        double refrIndex_prism2,
                        double refrIndex_prism3,
-                       double refrIndex_air,
-                       double beamSpreadLim)
+                       double refrIndex_air)
     : AbstractBeamDeflector(scanAngleMax_rad, 0, 0)
   {
     this->scanAngle = scanAngleMax_rad;
@@ -85,9 +83,9 @@ public:
     this->prism2_angle_rad = MathConverter::degreesToRadians(prism2_angle_deg);
     this->prism3_angle_rad = MathConverter::degreesToRadians(prism3_angle_deg);
 
-    this->prism1_thickness = prism1_thickness;
-    this->prism2_thickness = prism2_thickness;
-    this->prism3_thickness = prism3_thickness;
+    this->prism1_thickness_base = prism1_thickness_base;
+    this->prism2_thickness_base = prism2_thickness_base;
+    this->prism3_thickness_base = prism3_thickness_base;
 
     this->prism1_radius = prism1_radius;
     this->prism2_radius = prism2_radius;
@@ -95,14 +93,11 @@ public:
 
     this->distance_prism1_2 = distance_prism1_2;
     this->distance_prism2_3 = distance_prism2_3;
-    this->distance_to_observation_plane = distance_to_observation_plane;
 
     this->refrIndex_prism1 = refrIndex_prism1;
     this->refrIndex_prism2 = refrIndex_prism2;
     this->refrIndex_prism3 = refrIndex_prism3;
     this->refrIndex_air = refrIndex_air;
-
-    this->beamSpreadLim = beamSpreadLim;
 
     initializeGeometry();
   }
@@ -136,23 +131,21 @@ public:
   void setScanFreq_Hz(double scanFreq_Hz) override;
 
 private:
-  glm::dvec3 cachedPrism1NormalVector1, cachedPrism1NormalVector2,
-    cachedPrism1NormalVector2Original;
-  glm::dvec3 cachedPrism2NormalVector1, cachedPrism2NormalVector1Original,
-    cachedPrism2NormalVector2;
-  glm::dvec3 cachedPrism3NormalVector1, cachedPrism3NormalVector1Original,
-    cachedPrism3NormalVector2;
-  glm::dvec3 cachedObservationPlaneNormalVector;
-  glm::dvec3 cachedBeamDirection;
+  // Incident beam
+  glm::dvec3 originalBeam = glm::dvec3(0.0, 0.0, 1.0);
 
-  double cachedPrism1ThicknessSlopedZAxis, cachedPrism2ThicknessSlopedZAxis,
-    cachedPrism3ThicknessSlopedZAxis;
+  // Point on incident beam
+  glm::dvec3 pointOnOriginalBeam;
 
-  glm::dvec3 cachedBeamZAxisPoint;
-  glm::dvec3 cachedPrism1ZAxisPoint1, cachedPrism1ZAxisPoint2;
-  glm::dvec3 cachedPrism2ZAxisPoint1, cachedPrism2ZAxisPoint2;
-  glm::dvec3 cachedPrism3ZAxisPoint1, cachedPrism3ZAxisPoint2;
-  glm::dvec3 cachedObservationPlaneZAxisPoint;
+  // Points on all surfaces on z-axis
+  glm::dvec3 Prism1Point1ZAxis, Prism1Point2ZAxis;
+  glm::dvec3 Prism2Point1ZAxis, Prism2Point2ZAxis;
+  glm::dvec3 Prism3Point1ZAxis, Prism3Point2ZAxis;
+
+  // Static prism normal vectors (vertical side)
+  glm::dvec3 Prism1NormalVector2 = glm::dvec3(0.0, 0.0, -1.0);
+  glm::dvec3 Prism2NormalVector1 = glm::dvec3(0.0, 0.0, -1.0);
+  glm::dvec3 Prism3NormalVector2 = glm::dvec3(0.0, 0.0, -1.0);
 
   void initializeGeometry();
 
@@ -182,6 +175,8 @@ private:
                           const glm::dvec3& normalPlane,
                           glm::dvec3& intersection);
 
+  void printVec(const std::string& name, const glm::dvec3& v);
+
   /**
    * @brief Computes the refracted beam direction using Snell's law.
    *
@@ -202,24 +197,12 @@ private:
    * @return true if refraction occurs, false if there is total internal
    * reflection.
    *
-   * @note The input vectors `b` and `n` are expected to be normalized.
+   * @note The input vectors `incidentBeamDirection` and `surfaceNormal` are
+   * expected to be normalized.
    */
   static bool refractBeam(const glm::dvec3& incidentBeamDirection,
                           const glm::dvec3& surfaceNormal,
                           double refractiveIdxA,
                           double refractiveIdxB,
                           glm::dvec3& refracted);
-
-  /**
-   * @brief Rotates a 3D vector around the z-axis using Rodrigues' rotation
-   * formula.
-   *
-   * This function applies a rotation to the input vector `vec` around the
-   * z-axis. The rotation is performed using Rodrigues' formula.
-   *
-   * @param vec The input vector to rotate.
-   * @param angle Rotation angle in radians.
-   * @return Rotated vector after applying the rotation.
-   */
-  static glm::dvec3 rotateVectorRodrigues(const glm::dvec3& vec, double angle);
 };

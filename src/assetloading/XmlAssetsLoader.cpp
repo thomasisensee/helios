@@ -956,12 +956,12 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
     beamDeflector = std::make_shared<RisleyBeamDeflector>(
       scanAngleMax_rad, (double)rotorFreq_1_Hz, (double)rotorFreq_2_Hz);
   } else if (str_opticsType == "risley2") {
-    int rotorFreq_1_Hz = boost::get<int>(
-      XmlUtils::getAttribute(scannerNode, "rotorFreq1_Hz", "int", 180000));
-    int rotorFreq_2_Hz = boost::get<int>(
-      XmlUtils::getAttribute(scannerNode, "rotorFreq2_Hz", "int", -180000));
-    int rotorFreq_3_Hz = boost::get<int>(
-      XmlUtils::getAttribute(scannerNode, "rotorFreq3_Hz", "int", -540000));
+    double rotorFreq_1_Hz = boost::get<double>(
+      XmlUtils::getAttribute(scannerNode, "rotorFreq1_Hz", "double", 180000.));
+    double rotorFreq_2_Hz = boost::get<double>(
+      XmlUtils::getAttribute(scannerNode, "rotorFreq2_Hz", "double", -180000.));
+    double rotorFreq_3_Hz = boost::get<double>(
+      XmlUtils::getAttribute(scannerNode, "rotorFreq3_Hz", "double", -540000.));
 
     double prism1_angle_deg = boost::get<double>(XmlUtils::getAttribute(
       scannerNode, "prism1_angle_deg", "double", 27.65221)); // Which defaults?
@@ -988,8 +988,6 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
       scannerNode, "distance_prism1_2_mm", "double", 2.0));
     double distance_2_3 = boost::get<double>(XmlUtils::getAttribute(
       scannerNode, "distance_prism2_3_mm", "double", 2.0));
-    double distance_obs = boost::get<double>(XmlUtils::getAttribute(
-      scannerNode, "distance_to_observation_plane_mm", "double", 70000.0));
 
     double refr_prism1 = boost::get<double>(
       XmlUtils::getAttribute(scannerNode, "refrIndex_prism1", "double", 1.51));
@@ -1000,31 +998,25 @@ XmlAssetsLoader::createBeamDeflectorFromXml(tinyxml2::XMLElement* scannerNode)
     double refr_air = boost::get<double>(
       XmlUtils::getAttribute(scannerNode, "refrIndex_air", "double", 1.0));
 
-    double lims_mm = boost::get<double>(XmlUtils::getAttribute(
-      scannerNode, "beamSpreadLim_mm", "double", 0.0268873));
-
-    beamDeflector =
-      std::make_shared<RisleyBeamDeflector2>(scanAngleMax_rad,
-                                             (double)rotorFreq_1_Hz,
-                                             (double)rotorFreq_2_Hz,
-                                             (double)rotorFreq_3_Hz,
-                                             prism1_angle_deg,
-                                             prism2_angle_deg,
-                                             prism3_angle_deg,
-                                             prism1_thickness,
-                                             prism2_thickness,
-                                             prism3_thickness,
-                                             prism1_radius,
-                                             prism2_radius,
-                                             prism3_radius,
-                                             distance_1_2,
-                                             distance_2_3,
-                                             distance_obs,
-                                             refr_prism1,
-                                             refr_prism2,
-                                             refr_prism3,
-                                             refr_air,
-                                             lims_mm);
+    beamDeflector = std::make_shared<RisleyBeamDeflector2>(scanAngleMax_rad,
+                                                           rotorFreq_1_Hz,
+                                                           rotorFreq_2_Hz,
+                                                           rotorFreq_3_Hz,
+                                                           prism1_angle_deg,
+                                                           prism2_angle_deg,
+                                                           prism3_angle_deg,
+                                                           prism1_thickness,
+                                                           prism2_thickness,
+                                                           prism3_thickness,
+                                                           prism1_radius,
+                                                           prism2_radius,
+                                                           prism3_radius,
+                                                           distance_1_2,
+                                                           distance_2_3,
+                                                           refr_prism1,
+                                                           refr_prism2,
+                                                           refr_prism3,
+                                                           refr_air);
   }
 
   if (beamDeflector == nullptr) {
