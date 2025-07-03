@@ -9,7 +9,10 @@
 #include <glm/glm.hpp>
 
 /**
- * @brief Class representing a risley prisms beam deflector
+ * @brief Class representing a Risley-prism beam deflector based on three
+ * independently rotating prisms according to Anhu Li, Xingsheng Liu, and
+ * Wansong Sun, "Forward and inverse solutions for three-element Risley prism
+ * beam scanners," Opt. Express 25, 7677-7688 (2017), DOI: 10.1364/OE.25.007677
  */
 class RisleyBeamDeflector2 : public AbstractBeamDeflector
 {
